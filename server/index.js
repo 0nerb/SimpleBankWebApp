@@ -1,0 +1,153 @@
+const express = require("express");
+const app = express();
+const mysql = require("mysql");
+const cors = require("cors");
+//const axios = require("axios");
+
+//conecta com o Banco de Dados
+const db = mysql.createPool({
+    host:"localhost",
+    user:"root",
+    password:"root",
+    database:"conta_corrente",
+});
+
+app.use(express.json());
+app.use(cors());
+
+//Pega a data e hora local
+const timeElapsed = Date.now();
+const today = new Date(timeElapsed);
+const DiaHora = (today.toUTCString());
+
+let contaCorrenteglobal;
+let Senhaglobal;
+
+//validação do login
+app.post("/login", (req, res)=> {
+    const contaCorrente = req.body.contaCorrente;
+    const senha = req.body.senha;
+    contaCorrenteglobal = contaCorrente;
+    Senhaglobal = senha;
+    db.query("SELECT * FROM contas WHERE conta_corrente = ? AND senha = ?",
+            [contaCorrente, senha],
+            (err, result) =>{
+                if(err){
+                    res.send(err);
+                }
+                res.send(result);
+            });          
+});
+//busca o saldo da conta em login
+app.get("/getSaldo", (req, res)=>{
+    const SQL = "SELECT saldo FROM contas WHERE conta_corrente = ? AND senha = ?"
+    db.query(SQL, [contaCorrenteglobal, Senhaglobal], (err, result)=> {
+        if(err) console.error(err);
+        else res.send(result);
+
+        
+    });
+    
+});
+//Realiza os depositos
+app.post("/deposito", (req, res) =>{
+    const valor = req.body.valor;
+    const descricao = req.body.descricao;
+
+    const SQL = "UPDATE contas SET saldo = saldo + ? WHERE conta_corrente = ? AND senha = ?";
+    db.query(SQL,[valor, contaCorrenteglobal, Senhaglobal], (err, result) => {
+        if(err) console.log(err);
+        else res.send(result);
+    });
+
+    const extratoDeposito = "INSERT INTO depositos (conta_destino, valor_deposito, data_hora, descricao) VALUES (?, ?, ?, ?)"; 
+    db.query(extratoDeposito, [contaCorrenteglobal, valor, DiaHora, descricao], (err, result) => {
+        if(err) console.log(err);
+        
+    });
+
+});
+
+//faz os saques e atualiza no SQL
+app.post("/saque", (req, res) =>{
+    const valor = req.body.valor;
+    const SQL = "UPDATE contas SET saldo = saldo - ? WHERE conta_corrente = ? AND senha = ?"
+    const sqlSaldo = "SELECT saldo FROM contas WHERE conta_corrente = ? AND senha = ?"
+    const VIPCheck = "SELECT VIP FROM contas WHERE conta_corrente = ?"
+    db.query(sqlSaldo, [contaCorrenteglobal, Senhaglobal], (err, result) => {
+        if(err) console.log(err);
+        const data =JSON.parse(JSON.stringify(result)) 
+        const saldo = data[0].saldo
+        db.query(VIPCheck,[contaCorrenteglobal],(err,result) => {
+            if(err) console.log(err);
+            const data =JSON.parse(JSON.stringify(result))
+            const IsVip = data[0].VIP
+            //validação se for VIP
+            if(saldo > valor || IsVip === 1){
+                db.query(SQL, [valor, contaCorrenteglobal, Senhaglobal], (err, result) => {
+                    if(err){console.log(err);}
+                    else {res.send(result);}
+                })
+                    const extratoSaque = "INSERT INTO saques (conta_origem, valor_saque, data_hora) VALUES (?, ?, ?)"
+                    
+                    db.query(extratoSaque, [contaCorrenteglobal, valor, DiaHora], (err, result) => {
+                        if(err) console.log(err);
+                    
+                    })
+                        
+                        //TODO: diminuir saldo em 0.1% por minuto
+                
+            }
+            
+            }
+        )
+         
+    });
+    
+});
+//busca no SQL o histórico de depositos
+app.get("/extratoDeposito", (res, req) =>{
+    const SQL = "SELECT * FROM depositos WHERE conta_destino = ?"
+
+    db.query(SQL, [contaCorrenteglobal], (err, result) => {
+        if(err){console.log(err);}
+        else {
+            const data =JSON.parse(JSON.stringify(result))
+            res.send(data);
+            }
+    });
+});
+
+//busca no SQL o histórico de saques
+app.get("/extratoSaque", (res, req) =>{
+    const SQL = "SELECT * FROM saques WHERE conta_origem = ?"
+    db.query(SQL, [contaCorrenteglobal], (err, result) => {
+        if(err){console.log(err);}
+        else {
+            const data =JSON.parse(JSON.stringify(result))
+            console.log(data);
+            res.send(data);
+            }
+    });
+});
+
+/*app.post("/transferencia", (req, res) => {
+    const contaCorrente = req.body.contaCorrente;
+    const valor = req.body.valor;
+    const descricao = req.body.descricao;
+
+    if(saldoGlobal < valor){
+        console.log("Saldo insuficiente");
+    }
+    else{
+        let subtrairSaldo = `UPDATE contas SET saldo = saldo - ${valor} WHERE conta_corrente = ${contaCorrenteglobal};`
+        let adicionarSaldo = `UPDATE contas SET saldo = saldo + ${valor} WHERE conta_corrente = ${contaCorrente};`
+
+        let tranferencia = `INSERT INTO transferencias (conta_origem, conta_destino, data_transferencia, valor_transferencia, descricao)
+        VALUES (${contaCorrenteglobal}, ${contaCorrente}, ${CURRENT_DATE()}, ${valor}, ${descricao});`
+        
+    }
+    
+})*/
+
+app.listen(3001);
