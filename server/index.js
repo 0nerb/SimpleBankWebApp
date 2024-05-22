@@ -1,33 +1,48 @@
 const express = require("express");
 const app = express();
 const mysql = require("mysql");
+const fs = require("fs");
 const cors = require("cors");
-//const axios = require("axios");
 
-//conecta com o Banco de Dados
+
+
 const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "conta_corrente",
+  host: "mysql-1d92c458-desafio-web.g.aivencloud.com",
+  user: "avnadmin",
+  password: "avnadmin",
+  database: "defaultdb",
+  connectionLimit: 1000,
+  ssl: {
+    ca: fs.readFileSync('./ca.pem') 
+  }
 });
+
 
 app.use(express.json());
 app.use(cors());
 
-//Pega a data e hora local
 const dNow = new Date();
-const DiaHora = ( dNow.getMonth() + 1 ) + '/' + dNow.getDate() + '/' + dNow.getFullYear() + ' ' + dNow.getHours() + ':' + dNow.getMinutes();
+const DiaHora =
+  dNow.getMonth() +
+  1 +
+  "/" +
+  dNow.getDate() +
+  "/" +
+  dNow.getFullYear() +
+  " " +
+  dNow.getHours() +
+  ":" +
+  dNow.getMinutes();
 
 let contaCorrenteglobal;
 let Senhaglobal;
 
-//validação do login
 app.post("/login", (req, res) => {
   const contaCorrente = req.body.contaCorrente;
   const senha = req.body.senha;
   contaCorrenteglobal = contaCorrente;
   Senhaglobal = senha;
+  console.log("OI")
   db.query(
     "SELECT * FROM contas WHERE conta_corrente = ? AND senha = ?",
     [contaCorrente, senha],
@@ -39,7 +54,7 @@ app.post("/login", (req, res) => {
     }
   );
 });
-//busca o saldo da conta em login
+
 app.get("/getSaldo", (req, res) => {
   const SQL = "SELECT saldo FROM contas WHERE conta_corrente = ? AND senha = ?";
   db.query(SQL, [contaCorrenteglobal, Senhaglobal], (err, result) => {
@@ -47,19 +62,19 @@ app.get("/getSaldo", (req, res) => {
     else res.send(result);
   });
 });
-//Realiza os depositos
+
 app.post("/deposito", (req, res) => {
   const valor = req.body.valor;
   const descricao = req.body.descricao;
 
-  if (valor > 0){
-  const SQL =
-    "UPDATE contas SET saldo = saldo + ? WHERE conta_corrente = ? AND senha = ?";
-  db.query(SQL, [valor, contaCorrenteglobal, Senhaglobal], (err, result) => {
-    if (err) console.log(err);
-    else res.send(result);
-  });
-}
+  if (valor > 0) {
+    const SQL =
+      "UPDATE contas SET saldo = saldo + ? WHERE conta_corrente = ? AND senha = ?";
+    db.query(SQL, [valor, contaCorrenteglobal, Senhaglobal], (err, result) => {
+      if (err) console.log(err);
+      else res.send(result);
+    });
+  }
   const extratoDeposito =
     "INSERT INTO depositos (conta_destino, valor_deposito, data_hora, descricao) VALUES (?, ?, ?, ?)";
   db.query(
@@ -71,7 +86,6 @@ app.post("/deposito", (req, res) => {
   );
 });
 
-//faz os saques e atualiza no SQL
 app.post("/saque", (req, res) => {
   const valor = req.body.valor;
   const SQL =
@@ -87,7 +101,6 @@ app.post("/saque", (req, res) => {
       if (err) console.log(err);
       const data = JSON.parse(JSON.stringify(result));
       const IsVip = data[0].VIP;
-      //validação se for VIP
       if (saldo > valor || IsVip === 1) {
         db.query(
           SQL,
@@ -114,7 +127,7 @@ app.post("/saque", (req, res) => {
     });
   });
 });
-//busca no SQL o histórico de depositos
+
 app.get("/extratoDeposito", (req, res) => {
   const SQL = "SELECT * FROM depositos WHERE conta_destino = ?;";
   db.query(SQL, [contaCorrenteglobal], (err, result) => {
@@ -126,7 +139,6 @@ app.get("/extratoDeposito", (req, res) => {
   });
 });
 
-//busca no SQL o histórico de saques
 app.get("/extratoSaque", (req, res) => {
   const SQL = "SELECT * FROM saques WHERE conta_origem = ?;";
   db.query(SQL, [contaCorrenteglobal], (err, result) => {
@@ -163,10 +175,9 @@ app.post("/transferencia", (req, res) => {
   const contaCorrente = req.body.contaCorrente;
   const valor = req.body.valor;
   const descricao = req.body.descricao;
-  const taxaVIP =  (0, 8 / 100) * valor;
+  const taxaVIP = (0, 8 / 100) * valor;
   const taxaNaoVIP = parseInt(valor) + 8;
-  
-  
+
   db.query(
     "SELECT saldo FROM contas WHERE conta_corrente = ? AND senha = ?",
     [contaCorrenteglobal, Senhaglobal],
@@ -183,7 +194,6 @@ app.post("/transferencia", (req, res) => {
         const IsVip = data[0].VIP;
 
         if (saldo > valor && IsVip === 1) {
-          
           const subtrairSaldo =
             "UPDATE contas SET saldo = saldo - ? WHERE conta_corrente = ?;";
           const adicionarSaldo =
@@ -214,7 +224,7 @@ app.post("/transferencia", (req, res) => {
                 }
               }
             );
-            
+
             db.query(
               subtrairSaldo,
               [taxaVIP, contaCorrenteglobal],
@@ -225,13 +235,14 @@ app.post("/transferencia", (req, res) => {
               }
             );
           });
-        } if (saldo > valor && IsVip === 0 && valor < 1000){
-            const adicionarSaldo =
+        }
+        if (saldo > valor && IsVip === 0 && valor < 1000) {
+          const adicionarSaldo =
             "UPDATE contas SET saldo = saldo + ? WHERE conta_corrente = ?;";
-            const tranferencia =
+          const tranferencia =
             "INSERT INTO transferencias (conta_origem, conta_destino, data_transferencia, valor_transferencia, descricao, taxa_transferencia) VALUES (?, ?, ?, ?, ?, ?);";
-            const subtrairSaldo =
-              "UPDATE contas SET saldo = saldo - ? WHERE conta_corrente = ?;";
+          const subtrairSaldo =
+            "UPDATE contas SET saldo = saldo - ? WHERE conta_corrente = ?;";
 
           db.query(adicionarSaldo, [valor, contaCorrente], (err, result) => {
             if (err) {
@@ -256,8 +267,7 @@ app.post("/transferencia", (req, res) => {
                 }
               }
             );
-           
-            
+
             db.query(
               subtrairSaldo,
               [taxaNaoVIP, contaCorrenteglobal],
