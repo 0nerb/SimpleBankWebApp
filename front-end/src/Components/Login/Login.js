@@ -27,7 +27,7 @@ function Login() {
   };
   const handleClickLogin = async (values) => {
     try {
-      await Axios.post("http://localhost:3001/login", {
+      await Axios.post("https://desafioweb.onrender.com/login", {
         contaCorrente: values.contaCorrente,
         senha: values.senha,
       }).then((response) => {
@@ -44,7 +44,7 @@ function Login() {
 
   const changeStyle = async () => {
     try {
-      await Axios.get("http://localhost:3001/getSaldo").then((response) => {
+      await Axios.get("https://desafioweb.onrender.com/getSaldo").then((response) => {
         setSaldoAtual(response.data[0].saldo);
       });
     } catch (error) {
@@ -58,7 +58,7 @@ function Login() {
 
   const handleClickDeposit = async (values) => {
     try {
-      await Axios.post("http://localhost:3001/deposito", {
+      await Axios.post("https://desafioweb.onrender.com/deposito", {
         valor: values.valor,
         descricao: values.descricao,
       }).then((response) => {
@@ -70,7 +70,7 @@ function Login() {
   };
   const handleClickSaque = async (values) => {
     try {
-      await Axios.post("http://localhost:3001/saque", {
+      await Axios.post("https://desafioweb.onrender.com/saque", {
         valor: values.valor,
       }).then((response) => {
         console.log(response);
@@ -82,7 +82,7 @@ function Login() {
 
   const handleClickTransfer = async (values) => {
     try {
-      await Axios.post("http://localhost:3001/transferencia", {
+      await Axios.post("https://desafioweb.onrender.com/transferencia", {
         contaCorrente: values.contaCorrente,
         valor: values.valor,
         descricao: values.descricao,
@@ -96,21 +96,21 @@ function Login() {
 
   const handleClickExtrato = async () => {
     try {
-      await Axios.get("http://localhost:3001/extratoSaque").then((response) => {
+      await Axios.get("https://desafioweb.onrender.com/extratoSaque").then((response) => {
         setExtratoSaque(response.data);
       });
-      await Axios.get("http://localhost:3001/extratoDeposito").then(
+      await Axios.get("https://desafioweb.onrender.com/extratoDeposito").then(
         (response) => {
           setExtratoDeposito(response.data);
         }
       );
       await Axios.get(
-        "http://localhost:3001/extratoTransferenciaEnviadas"
+        "https://desafioweb.onrender.com/extratoTransferenciaEnviadas"
       ).then((response) => {
         setTransferenciaEnviadas(response.data);
       });
       await Axios.get(
-        "http://localhost:3001/extratoTransferenciaRecebidas"
+        "https://desafioweb.onrender.com/extratoTransferenciaRecebidas"
       ).then((response) => {
         setTransferenciaRecebidas(response.data);
       });
