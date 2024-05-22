@@ -7,18 +7,28 @@ import { useState } from "react";
 
 function Login() {
   const [money, setMoney] = useState(0.0);
-  const [style, setStyle] = useState("dark");
-  const [extrato, setExtrato] = useState([]);
+  const [style, setStyle] = useState("blur");
+  const [extratoSaque, setExtratoSaque] = useState([]);
+  const [extratoDeposito, setExtratoDeposito] = useState([]);
   const [autenticado, setAutenticado] = useState(false);
+  const [tranferenciaEnviadas, setTransferenciaEnviadas] =useState([]);
+  const [tranferenciaRecebidas, setTransferenciaRecebidas] =useState([]);
 
   const logout = () =>{
-    setMoney(0.0)
-    setStyle("dark")
-    setExtrato([])
-    setAutenticado(false)
+    setMoney(0.0);
+    setStyle("dark");
+    setExtratoSaque([]);
+    setExtratoDeposito([]);
+    setAutenticado(false);
   } 
-
+  const esconderExtrato = () =>{
+    setExtratoDeposito([])
+    setExtratoSaque([])
+    setTransferenciaEnviadas([])
+    setTransferenciaRecebidas([])
+  }
   const handleClickLogin = async (values) => {
+    try {
     await Axios.post("http://localhost:3001/login", {
       contaCorrente: values.contaCorrente,
       senha: values.senha,
@@ -29,6 +39,10 @@ function Login() {
       }
       setAutenticado(true)
     });
+  } catch (error){
+    alert("Login Error")
+
+  }
   };
 
   const changeStyle = async () => {
@@ -42,31 +56,61 @@ function Login() {
 
     console.log("you just clicked");
     if (style !== "light") setStyle("light");
-    else setStyle("dark");
+    else setStyle("blur");
+    
   };
 
   const handleClickDeposit = async (values) => {
-    await Axios.post("http://localhost:3001/deposito", {
+    try {
+      await Axios.post("http://localhost:3001/deposito", {
       valor: values.valor,
       descricao: values.descricao,
     }).then((response) => {
       console.log(response);
     });
+    } catch (error) {
+      alert("Depósito Error")
+    }
+    
   };
   const handleClickSaque = async (values) => {
-    await Axios.post("http://localhost:3001/saque", {
-      valor: values.valor,
-    }).then((response) => {
-      console.log(response);
-    });
+    try {
+      await Axios.post("http://localhost:3001/saque", {
+        valor: values.valor,
+      }).then((response) => {
+        console.log(response);
+      });
+    } catch (error) {
+      alert("Saque Error")
+    }
+   
+  };
+
+  const handleClickTransfer = async (values) => {
+    try {
+      await Axios.post("http://localhost:3001/transferencia", {
+        contaCorrente: values.contaCorrente,
+        valor: values.valor,
+        descricao: values.descricao,
+      }).then((response) => {
+        console.log(response);
+      });
+    } catch (error) {
+      alert("Transferência Error")
+    }
+   
   };
 
   const handleClickExtrato = async () => {
     try {
-      await Axios.get("http://localhost:3001/extratoSaque").then((response) => {
-        setExtrato(response.data);
-        //console.log(extrato);
-      });
+        await Axios.get("http://localhost:3001/extratoSaque").then((response) => {
+        setExtratoSaque(response.data);});
+        await Axios.get("http://localhost:3001/extratoDeposito").then((response) => {
+        setExtratoDeposito(response.data);});
+        await Axios.get("http://localhost:3001/extratoTransferenciaEnviadas").then((response) => {
+        setTransferenciaEnviadas(response.data);});
+        await Axios.get("http://localhost:3001/extratoTransferenciaRecebidas").then((response) => {
+        setTransferenciaRecebidas(response.data);});
     } catch (error) {
       alert("Erro em abrir extrato");
     }
@@ -95,12 +139,12 @@ function Login() {
                   placeholder="Senha"
                 />
               </div>
-              <button className="submit-login-button" type="submit">
+              <button className="button" type="submit">
                 Login
               </button>
             </Form>
           </Formik>
-          <button className="submit-login-button" onClick={logout}>
+          <button className="button" onClick={logout}>
             Logout
           </button>
         </div>
@@ -125,7 +169,7 @@ function Login() {
                   placeholder="Descrição"
                 />
               </div>
-              <button className="submit-login-button" type="submit">
+              <button className="button" type="submit">
                 Submit
               </button>
             </Form>
@@ -146,7 +190,7 @@ function Login() {
                   placeholder="Valor a sacar"
                 />
               </div>
-              <button className="submit-login-button" type="submit">
+              <button className="button" type="submit">
                 Submit
               </button>
             </Form>
@@ -156,28 +200,106 @@ function Login() {
 
         
         {autenticado &&
-        <div className={style} onClick={changeStyle}>
-          <h1>SALDO</h1>
-          {typeof money !== "undefined" && <h3>R${money}</h3>}
+        <div>
+          <div className={style}>
+            <h1>SALDO</h1>
+            {typeof money !== "undefined" && <h3>R${money}</h3>}
+          
           </div>
+          <button className="button"
+            onClick={changeStyle}>
+              Mostrar/Atualizar saldo
+            </button>
+        </div>
         }
       </div>
+      {autenticado &&
+      <div className='transferencia'>
+        <h1>Transferência</h1>
+        <Formik initialValues = {{}} onSubmit={handleClickTransfer}>
+          <Form className='transferencia-form'>
+
+            <div className='transferencia-form-group'>
+              <Field 
+                name = "contaCorrente"
+                className = "form-field"
+                placeholder = "Conta corrente destino"
+              />
+            </div>
+
+            <div className='transferencia-form-group'>
+              <Field 
+                name = "valor"
+                className = "form-field"
+                placeholder = "Valor a enviar"
+              />
+            </div>
+
+            <div className='transferencia-form-group'>
+              <Field 
+                name = "descricao"
+                className = "form-field"
+                placeholder = "Descrição"
+              />
+            </div>
+            <button
+              className='button'
+              type='submit'>
+              Submit
+            </button>
+          </Form>
+        </Formik>
         
+      </div>
+} 
         {autenticado &&
       <div className="extrato">
         <h1>Extrato</h1>
 
         <div className="movimentacao">
-          {extrato.map((item, i) => (
-            <tr key={i}>
-              <td>Valor Sacado: {item.valor_saque}</td>
-              <td>Data: {item.data_hora}</td>
-            </tr>
+          <h2>SAQUES</h2>
+          {extratoSaque.map((item, i) => (
+            <div key={i}>
+              <h3>Valor Sacado: R${item.valor_saque} <br/>
+              Data: {item.data_hora}</h3>
+            </div>
+          ))}
+          <h2>DEPÓSITOS</h2>
+          {extratoDeposito.map((item, i) => (
+            <div key={i}>
+              <h3>Conta Destino: {item.conta_destino}<br/>
+              Valor Depositado: R${item.valor_deposito}<br/>
+              Data: {item.data_hora}<br/>
+              Descrição: {item.descricao}</h3>
+            </div>
+          ))}
+           <h2>TRANSFERÊNCIAS ENVIADAS</h2>
+          {tranferenciaEnviadas.map((item, i) => (
+            <div key={i}>
+              <h3>Conta Destino: {item.conta_destino}<br/>
+              Valor Depositado: R${item.valor_transferencia}<br/>
+              Data: {item.data_transferencia}<br/>
+              Descrição: {item.descricao}<br/>
+              Taxa de Transferência: R${item.taxa_transferencia}</h3>
+            </div>
+          ))}
+           <h2>TRANSFERÊNCIAS RECEBIDAS</h2>
+          {tranferenciaRecebidas.map((item, i) => (
+            <div key={i}>
+              <h3>Conta Destino: {item.conta_destino}<br/>
+              Valor Depositado: {item.valor_transferencia}<br/>
+              Data: {item.data_transferencia}<br/>
+              Descrição: {item.descricao}<br/>
+              Taxa de Transferência: R${item.taxa_transferencia}</h3>
+            </div>
           ))}
         </div>
 
-        <button className="submit-login-button" onClick={handleClickExtrato}>
-          Mostrar Extrato
+        <button className="button" onClick={handleClickExtrato}>
+          Abrir
+        </button>
+        <button className="button" onClick={esconderExtrato}>
+          Fechar
         </button>
           
       </div>
