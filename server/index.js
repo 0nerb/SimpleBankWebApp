@@ -1,20 +1,15 @@
 const express = require("express");
 const app = express();
 const mysql = require("mysql");
-const fs = require("fs");
 const cors = require("cors");
-
-
 
 const db = mysql.createPool({
   host: "mysql-1d92c458-desafio-web.g.aivencloud.com",
-  user: "avnadmin",
-  password: "avnadmin",
+  user: "brenokern",
+  password: "AVNS_Mec-g54VY06gUc_t5sM",
   database: "defaultdb",
-  connectionLimit: 1000,
-  ssl: {
-    ca: fs.readFileSync('./ca.pem') 
-  }
+  port: "16784"
+ 
 });
 
 
@@ -42,7 +37,7 @@ app.post("/login", (req, res) => {
   const senha = req.body.senha;
   contaCorrenteglobal = contaCorrente;
   Senhaglobal = senha;
-  console.log("OI")
+  
   db.query(
     "SELECT * FROM contas WHERE conta_corrente = ? AND senha = ?",
     [contaCorrente, senha],
@@ -51,16 +46,25 @@ app.post("/login", (req, res) => {
         res.send(err).status(422);
       }
       res.send(result);
+      
+      
+
     }
   );
+ 
 });
 
 app.get("/getSaldo", (req, res) => {
+  
   const SQL = "SELECT saldo FROM contas WHERE conta_corrente = ? AND senha = ?";
   db.query(SQL, [contaCorrenteglobal, Senhaglobal], (err, result) => {
-    if (err) console.error(err);
+    if (err) {console.error(err);}
     else res.send(result);
+    
+    
   });
+  
+  
 });
 
 app.post("/deposito", (req, res) => {
