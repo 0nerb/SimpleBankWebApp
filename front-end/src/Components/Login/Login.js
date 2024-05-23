@@ -14,12 +14,15 @@ function Login() {
 
   const logout = () => {
     setSaldoAtual(0.0);
-    setStyle("dark");
+    setStyle("blur");
     setExtratoSaque([]);
     setExtratoDeposito([]);
     setAutenticado(false);
   };
-  const esconderExtrato = () => {
+  const hideSaldo = () =>{
+    setStyle("blur");
+  }
+    const esconderExtrato = () => {
     setExtratoDeposito([]);
     setExtratoSaque([]);
     setTransferenciaEnviadas([]);
@@ -169,7 +172,7 @@ function Login() {
                     placeholder="Descrição"
                   />
                 </div>
-                <button className="button" type="submit">
+                <button className="button" type="submit" onClick={hideSaldo}>
                   Submit
                 </button>
               </Form>
@@ -188,7 +191,7 @@ function Login() {
                     placeholder="Valor a sacar"
                   />
                 </div>
-                <button className="button" type="submit">
+                <button className="button" type="submit" onClick={hideSaldo}>
                   Submit
                 </button>
               </Form>
