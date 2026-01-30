@@ -4,11 +4,11 @@ const mysql = require("mysql");
 const cors = require("cors");
 
 const db = mysql.createPool({
-  host: "mysql-1d92c458-desafio-web.g.aivencloud.com",
-  user: "brenokern",
-  password: "AVNS_Mec-g54VY06gUc_t5sM",
-  database: "defaultdb",
-  port: "16784"
+  host: "",
+  user: "",
+  password: "",
+  database: "",
+  port: ""
  
 });
 
